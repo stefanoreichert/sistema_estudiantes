@@ -1,0 +1,9 @@
+config.php
+*.db
+*.sqlite
+/xampp/
+/xampp/mysql/data/
+/mysql/data/
+/.vscode/
+.DS_Store
+Thumbs.db
