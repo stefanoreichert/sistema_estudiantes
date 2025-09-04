@@ -79,4 +79,5 @@ $rs = $mysqli->query("SELECT id, nombre, edad, id_carrera FROM alumno ORDER BY i
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+<?php require 'include/footer.php'; ?>
 </html>
