@@ -12,6 +12,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             $stmt=$mysqli->prepare('INSERT INTO notas(id_alumno,id_materia,nota) VALUES(?,?,?)');
             $stmt->bind_param('iid',$id_alumno,$id_materia,$nota);
             $stmt->execute();
+            $mysqli->commit();
+
         }
     }
     if($accion==='borrar'){
@@ -20,6 +22,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             $stmt=$mysqli->prepare('DELETE FROM notas WHERE id=?');
             $stmt->bind_param('i',$id);
             $stmt->execute();
+            $mysqli->commit();
+
         }
     }
     if($accion==='modificar'){
@@ -29,6 +33,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             $stmt=$mysqli->prepare('UPDATE notas SET nota=? WHERE id=?');
             $stmt->bind_param('di',$nota,$id);
             $stmt->execute();
+            $mysqli->commit();
+
         }
     }
     header('Location: notas.php');

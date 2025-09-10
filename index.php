@@ -74,17 +74,17 @@
           </div>
         </div>
 
-        <div class="carousel-item">
-          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&h=300" 
-               class="d-block w-100 rounded" alt="Administración de Empresas"
-               onerror="this.src='https://via.placeholder.com/1200x300/28a745/ffffff?text=📊+Administración+de+Empresas'">
+        <div class="carousel-item active">
+          <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43"
+              class="d-block w-100 rounded" alt="Administración de Empresas">
           <div class="carousel-caption d-none d-md-block">
             <div class="bg-dark bg-opacity-75 rounded p-3">
               <h3 class="fw-bold">Administración de Empresas</h3>
-              <p class="mb-0">Gestión estratégica • Liderazgo empresarial • Finanzas corporativas</p>
+              <p class="mb-0">Estrategia, gestión financiera y liderazgo organizacional</p>
             </div>
           </div>
         </div>
+
 
         <div class="carousel-item">
           <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1200&h=300" 
