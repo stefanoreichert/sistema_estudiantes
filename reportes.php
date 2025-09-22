@@ -1,5 +1,7 @@
 <?php
 include 'config.php';
+include 'auth.php';
+verificarSesion();
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -8,9 +10,39 @@ include 'config.php';
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reportes - Sistema Estudiantes</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     body { background-color: #f8f9fa; }
     .navbar { border-bottom: 1px solid #dee2e6; }
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .filter-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0 !important;
+        border: none;
+    }
+    .btn-filter {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-weight: 500;
+    }
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+        color: white;
+    }
+    .table {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
     .card { border-radius: 12px; transition: transform 0.2s; }
     .card:hover { transform: translateY(-5px); }
     .card-title { font-weight: 600; }
@@ -28,31 +60,50 @@ include 'config.php';
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
+            <ul class="navbar-nav me-auto">
                 <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
                 <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
-                
-                <li class="nav-item"><a class="nav-link active" href="notas.php">Notas</a></li>
-                <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
+                <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
+                <li class="nav-item"><a class="nav-link active" href="reportes.php">Reportes</a></li>
+                <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
             </ul>
+            <?php
+            $usuario = obtenerUsuarioActual();
+            if ($usuario['username']) {
+                echo '
+                <div class="navbar-nav ms-auto">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownReportes" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>' . htmlspecialchars($usuario['username']) . '</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="cambiar_password.php"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
+                    </div>
+                </div>';
+            }
+            ?>
         </div>
     </nav>
 </div>
 
-<div class="container py-5">
-    <h1 class="mb-5 text-center fw-bold text-primary">Reportes por Carrera</h1>
+<div class="container py-4">
+    <h2 class="mb-4">Reportes por Carrera</h2>
     <div class="row g-4">
     <?php
-    $rs_carreras = $mysqli->query("SELECT id,nombre FROM carrera");
+    $rs_carreras = $mysqli->query("SELECT id_carrera,nombre FROM carreras");
     while($carrera=$rs_carreras->fetch_assoc()){
-        $id_carrera=$carrera['id'];
+        $id_carrera=$carrera['id_carrera'];
         $nombre_carrera=$carrera['nombre'];
         $rs_mejor=$mysqli->query("
-            SELECT a.id AS id_alumno,a.nombre,AVG(n.nota) AS promedio
-            FROM alumno a
-            JOIN notas n ON a.id=n.id_alumno
+            SELECT a.id_alumno AS id_alumno,a.nombre,AVG((n.nota1 + n.nota2 + n.nota3) / 3) AS promedio
+            FROM alumnos a
+            JOIN notas n ON a.id_alumno=n.id_alumno
             WHERE a.id_carrera=$id_carrera
-            GROUP BY a.id
+            GROUP BY a.id_alumno, a.nombre
             ORDER BY promedio DESC
             LIMIT 1
         ");
@@ -66,14 +117,13 @@ include 'config.php';
                         $mejor=$rs_mejor->fetch_assoc();
                         $id_mejor=$mejor['id_alumno'];
                         $nombre_alumno=$mejor['nombre'];
-                        $rs_notas=$mysqli->query("SELECT nota FROM notas WHERE id_alumno=$id_mejor");
-                        $notas=[];
-                        while($n=$rs_notas->fetch_assoc()) $notas[]=$n['nota'];
-                        $promedio=count($notas)>0 ? array_sum($notas)/count($notas) : 0;
+                        $rs_notas=$mysqli->query("SELECT nota1, nota2, nota3, ROUND((nota1 + nota2 + nota3) / 3, 2) AS promedio FROM notas WHERE id_alumno=$id_mejor");
+                        $notas_data = $rs_notas->fetch_assoc();
+                        $promedio = $notas_data['promedio'];
                         ?>
                         <h5 class="card-subtitle mb-2 text-center">Mejor Alumno: <?=htmlspecialchars($nombre_alumno)?></h5>
-                        <p class="notas text-center"><strong>Notas:</strong> <?=implode(', ',$notas)?></p>
-                        <p class="promedio text-center">Promedio: <?=number_format($promedio,2)?></p>
+                        <p class="notas text-center"><strong>Notas:</strong> <?=$notas_data['nota1']?>, <?=$notas_data['nota2']?>, <?=$notas_data['nota3']?></p>
+                        <p class="promedio text-center">Promedio: <?=$promedio?></p>
                         <?php
                     } else {
                         ?>

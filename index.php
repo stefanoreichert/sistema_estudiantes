@@ -1,11 +1,18 @@
-<?php require 'config.php'; ?>
+<?php 
+require 'config.php'; 
+require 'auth.php';
+verificarSesion();
+
+$usuario = obtenerUsuarioActual();
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sistema Estudiantes</title>
+  <title>Inicio - Sistema Estudiantes</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     /* Asegurar que no haya superposiciones */
     .carousel {
@@ -22,6 +29,24 @@
     .welcome-section {
       margin-bottom: 30px;
     }
+    
+    .filter-card {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .filter-card .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0 !important;
+        border: none;
+    }
+    .table {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
   </style>
 </head>
 <body>
@@ -33,12 +58,31 @@
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav">
-          <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link active" href="index.php">Inicio</a></li>
           <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
           <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
           <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
+          <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
         </ul>
+        <?php
+        if ($usuario['username']) {
+            echo '
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownIndex" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle me-2"></i>
+                        <span>' . htmlspecialchars($usuario['username']) . '</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="cambiar_password.php"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                    </ul>
+                </div>
+            </div>';
+        }
+        ?>
       </div>
     </nav>
   </div>
@@ -47,7 +91,8 @@
   <div class="container mt-4">
     <div class="welcome-section">
       <div class="p-5 bg-primary text-white rounded-4 shadow-lg text-center">
-        <h1 class="display-4 fw-bold">Bienvenido al Sistema de Estudiantes</h1>
+        <h1 class="display-4 fw-bold">Bienvenido, <?= htmlspecialchars($usuario['username']) ?></h1>
+        <p class="lead">Sistema de Gestión Estudiantil</p>
       </div>
     </div>
   </div>
@@ -74,7 +119,7 @@
           </div>
         </div>
 
-        <div class="carousel-item active">
+        <div class="carousel-item">
           <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43"
               class="d-block w-100 rounded" alt="Administración de Empresas">
           <div class="carousel-caption d-none d-md-block">
@@ -114,5 +159,15 @@
   <?php require 'include/footer.php'; ?>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Inicialización simple sin logs
+    document.addEventListener('DOMContentLoaded', function() {
+      // Forzar inicialización de todos los dropdowns
+      const dropdowns = document.querySelectorAll('[data-bs-toggle="dropdown"]');
+      dropdowns.forEach(function(dropdown) {
+        new bootstrap.Dropdown(dropdown);
+      });
+    });
+  </script>
 </body>
 </html>
