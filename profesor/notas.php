@@ -1,7 +1,14 @@
 <?php
-include 'config.php';
-include 'auth.php';
+include '../config.php';
+include '../auth.php';
 verificarSesion();
+verificarNivel(['admin', 'profesor']); // Solo admin y profesores pueden gestionar notas
+
+$usuario = obtenerUsuarioActual();
+$id_profesor = null;
+if (esProfesor()) {
+    $id_profesor = obtenerIdProfesor();
+}
 
 $mensaje = '';
 
@@ -76,17 +83,38 @@ $carreras = $mysqli->query('SELECT id_carrera, nombre FROM carreras ORDER BY nom
 // Obtener alumnos
 $alumnos = $mysqli->query('SELECT id_alumno, nombre, id_carrera FROM alumnos ORDER BY nombre');
 
-// Obtener materias
-$materias = $mysqli->query('SELECT id_materia, nombre, id_carrera FROM materias ORDER BY nombre');
+// Obtener materias (filtradas por profesor si no es admin)
+if (esProfesor() && $id_profesor) {
+    $materias = $mysqli->prepare('SELECT id_materia, nombre, id_carrera FROM materias WHERE id_profesor = ? ORDER BY nombre');
+    $materias->bind_param('i', $id_profesor);
+    $materias->execute();
+    $materias = $materias->get_result();
+} else {
+    $materias = $mysqli->query('SELECT id_materia, nombre, id_carrera FROM materias ORDER BY nombre');
+}
 
-// Obtener notas con información completa incluyendo carreras
-$rs = $mysqli->query('SELECT n.id_nota, a.nombre AS alumno, m.nombre AS materia, n.nota1, n.nota2, n.nota3,
-                      ROUND((n.nota1 + n.nota2 + n.nota3) / 3, 2) AS promedio, c.nombre AS carrera
-                      FROM notas n 
-                      JOIN alumnos a ON a.id_alumno = n.id_alumno 
-                      JOIN materias m ON m.id_materia = n.id_materia 
-                      JOIN carreras c ON c.id_carrera = a.id_carrera
-                      ORDER BY a.nombre, m.nombre');
+// Obtener notas con información completa incluyendo carreras (filtradas por profesor si no es admin)
+if (esProfesor() && $id_profesor) {
+    $rs = $mysqli->prepare('SELECT n.id_nota, a.nombre AS alumno, m.nombre AS materia, n.nota1, n.nota2, n.nota3,
+                          ROUND((COALESCE(n.nota1,0) + COALESCE(n.nota2,0) + COALESCE(n.nota3,0)) / 3, 2) AS promedio, c.nombre AS carrera
+                          FROM notas n 
+                          JOIN alumnos a ON a.id_alumno = n.id_alumno 
+                          JOIN materias m ON m.id_materia = n.id_materia 
+                          JOIN carreras c ON c.id_carrera = a.id_carrera
+                          WHERE m.id_profesor = ?
+                          ORDER BY a.nombre, m.nombre');
+    $rs->bind_param('i', $id_profesor);
+    $rs->execute();
+    $rs = $rs->get_result();
+} else {
+    $rs = $mysqli->query('SELECT n.id_nota, a.nombre AS alumno, m.nombre AS materia, n.nota1, n.nota2, n.nota3,
+                          ROUND((COALESCE(n.nota1,0) + COALESCE(n.nota2,0) + COALESCE(n.nota3,0)) / 3, 2) AS promedio, c.nombre AS carrera
+                          FROM notas n 
+                          JOIN alumnos a ON a.id_alumno = n.id_alumno 
+                          JOIN materias m ON m.id_materia = n.id_materia 
+                          JOIN carreras c ON c.id_carrera = a.id_carrera
+                          ORDER BY a.nombre, m.nombre');
+}
 ?>
 
 <!DOCTYPE html>
@@ -145,42 +173,7 @@ $rs = $mysqli->query('SELECT n.id_nota, a.nombre AS alumno, m.nombre AS materia,
 <body>
 
 <!-- Navbar -->
-<div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Sistema Estudiantes</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
-                <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
-                <li class="nav-item"><a class="nav-link active" href="notas.php">Notas</a></li>
-                <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
-                <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
-            </ul>
-            <?php
-            $usuario = obtenerUsuarioActual();
-            if ($usuario['username']) {
-                echo '
-                <div class="navbar-nav ms-auto">
-                    <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownNotas" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-2"></i>
-                            <span>' . htmlspecialchars($usuario['username']) . '</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="cambiar_password.php"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
-                        </ul>
-                    </div>
-                </div>';
-            }
-            ?>
-        </div>
-    </nav>
-</div>
+<?php include '../include/navbar.php'; ?>
 
 <div class="container my-4">
     <h2 class="mb-4">Gestión de Notas</h2>

@@ -5,6 +5,16 @@ verificarSesion();
 
 $usuario = obtenerUsuarioActual();
 
+// Redireccionar según el rol del usuario
+if (esAlumno()) {
+    header('Location: alumno/perfil_alumno.php');
+    exit;
+} elseif (esProfesor()) {
+    header('Location: profesor/perfil_profesor.php');
+    exit;
+}
+
+// Si es admin, continúa con el perfil general
 // Obtener datos completos del usuario
 $stmt = $mysqli->prepare("SELECT id, username FROM usuarios WHERE id = ?");
 $stmt->bind_param('i', $usuario['id']);
@@ -68,15 +78,40 @@ if (!$datosUsuario) {
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
+                <?php if (esAdmin()): ?>
                 <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
                 <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
+                <li class="nav-item"><a class="nav-link" href="profesores.php">Profesores</a></li>
+                <li class="nav-item"><a class="nav-link" href="materias.php">Materias</a></li>
                 <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
                 <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
                 <li class="nav-item"><a class="nav-link active" href="perfil.php">Ver Perfil</a></li>
+                <?php elseif (esProfesor()): ?>
+                <li class="nav-item"><a class="nav-link" href="notas.php">Gestión de Notas</a></li>
+                <li class="nav-item"><a class="nav-link active" href="perfil.php">Ver Perfil</a></li>
+                <?php elseif (esAlumno()): ?>
+                <li class="nav-item"><a class="nav-link" href="perfil_alumno.php">Mi Perfil</a></li>
+                <?php endif; ?>
             </ul>
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-1"></i>Cerrar Sesión</a></li>
-            </ul>
+            <?php
+            $usuario = obtenerUsuarioActual();
+            if ($usuario['username']) {
+                echo '
+                <div class="navbar-nav ms-auto">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownPerfil" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-2"></i>
+                            <span>' . htmlspecialchars($usuario['username']) . '</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="cambiar_password.php"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
+                        </ul>
+                    </div>
+                </div>';
+            }
+            ?>
         </div>
     </nav>
 </div>

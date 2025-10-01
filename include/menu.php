@@ -7,8 +7,9 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto">
         <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
-        <li class="nav-item"><a class="btn btn-primary text-white nav-link px-3" href="estudiantes.php">Estudiantes</a></li>
-        <li class="nav-item"><a class="nav-link" href="alta.php">Agregar alumno</a></li>
+        <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
+        <li class="nav-item"><a class="nav-link" href="profesores.php">Profesores</a></li>
+        <li class="nav-item"><a class="nav-link" href="materias.php">Materias</a></li>
         <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
         <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
       </ul>

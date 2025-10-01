@@ -1,6 +1,6 @@
 <?php
-include 'config.php';
-include 'auth.php';
+include '../config.php';
+include '../auth.php';
 verificarSesion();
 ?>
 <!DOCTYPE html>
@@ -54,6 +54,9 @@ verificarSesion();
 <body>
 
 <div class="container-fluid">
+<?php include '../include/navbar.php'; ?>
+
+<div style="display:none;"><!-- Navbar reemplazado -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand" href="#">Sistema Estudiantes</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" >
@@ -61,11 +64,20 @@ verificarSesion();
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav me-auto">
+                <?php if (esAdmin()): ?>
                 <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
                 <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
+                <li class="nav-item"><a class="nav-link" href="profesores.php">Profesores</a></li>
+                <li class="nav-item"><a class="nav-link" href="materias.php">Materias</a></li>
                 <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
                 <li class="nav-item"><a class="nav-link active" href="reportes.php">Reportes</a></li>
                 <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
+                <?php elseif (esProfesor()): ?>
+                <li class="nav-item"><a class="nav-link" href="notas.php">Gestión de Notas</a></li>
+                <li class="nav-item"><a class="nav-link" href="perfil_profesor.php">Mi Perfil</a></li>
+                <?php elseif (esAlumno()): ?>
+                <li class="nav-item"><a class="nav-link" href="perfil_alumno.php">Mi Perfil</a></li>
+                <?php endif; ?>
             </ul>
             <?php
             $usuario = obtenerUsuarioActual();
@@ -147,3 +159,4 @@ verificarSesion();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

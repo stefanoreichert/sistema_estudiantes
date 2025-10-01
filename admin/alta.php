@@ -1,7 +1,8 @@
 <?php
-include 'config.php';
-include 'auth.php';
+include '../config.php';
+include '../auth.php';
 verificarSesion();
+verificarNivel(['admin']); // Solo administradores pueden agregar estudiantes
 
 $mensaje = '';
 
@@ -56,43 +57,7 @@ $carreras = $mysqli->query("SELECT id_carrera, nombre FROM carreras ORDER BY nom
 </head>
 <body>
 
-<!-- Navbar igual a estudiantes.php -->
-<div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Sistema Estudiantes</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
-                <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
-                <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
-                <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
-                <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
-            </ul>
-            <?php
-            $usuario = obtenerUsuarioActual();
-            if ($usuario['username']) {
-                echo '
-                <div class="navbar-nav ms-auto">
-                    <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownAlta" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-2"></i>
-                            <span>' . htmlspecialchars($usuario['username']) . '</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="cambiar_password.php"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
-                        </ul>
-                    </div>
-                </div>';
-            }
-            ?>
-        </div>
-    </nav>
-</div>
+<?php include '../include/navbar.php'; ?>
 
 <!-- Formulario -->
 <div class="container py-4">
@@ -132,3 +97,4 @@ $carreras = $mysqli->query("SELECT id_carrera, nombre FROM carreras ORDER BY nom
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+

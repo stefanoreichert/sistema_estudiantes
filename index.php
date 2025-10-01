@@ -51,41 +51,7 @@ $usuario = obtenerUsuarioActual();
 </head>
 <body>
 
-  <div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <a class="navbar-brand" href="#">Sistema Estudiantes</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav me-auto">
-          <li class="nav-item"><a class="nav-link active" href="index.php">Inicio</a></li>
-          <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
-          <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
-          <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
-          <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
-        </ul>
-        <?php
-        if ($usuario['username']) {
-            echo '
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownIndex" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user-circle me-2"></i>
-                        <span>' . htmlspecialchars($usuario['username']) . '</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="cambiar_password.php"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
-                    </ul>
-                </div>
-            </div>';
-        }
-        ?>
-      </div>
-    </nav>
-  </div>
+  <?php include 'include/navbar.php'; ?>
 
   <!-- Sección de Bienvenida -->
   <div class="container mt-4">
@@ -96,6 +62,96 @@ $usuario = obtenerUsuarioActual();
       </div>
     </div>
   </div>
+
+  <!-- Sección de Acceso Rápido -->
+  <?php if (esAdmin()): ?>
+  <div class="container mt-4">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h3 class="mb-4 text-center">Panel de Administración</h3>
+      </div>
+      
+      <div class="col-md-4 mb-3">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body text-center">
+            <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
+            <h5 class="card-title">Estudiantes</h5>
+            <p class="card-text">Gestiona la información de los estudiantes, inscripciones y datos académicos.</p>
+            <a href="estudiantes.php" class="btn btn-primary">
+              <i class="fas fa-arrow-right me-1"></i>Ir a Estudiantes
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4 mb-3">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body text-center">
+            <i class="fas fa-chalkboard-teacher fa-3x text-success mb-3"></i>
+            <h5 class="card-title">Profesores</h5>
+            <p class="card-text">Administra el personal docente, especialidades y datos de contacto.</p>
+            <a href="profesores.php" class="btn btn-success">
+              <i class="fas fa-arrow-right me-1"></i>Ir a Profesores
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="col-md-4 mb-3">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body text-center">
+            <i class="fas fa-book fa-3x text-info mb-3"></i>
+            <h5 class="card-title">Materias</h5>
+            <p class="card-text">Configura las materias, créditos, horarios y asignación de profesores.</p>
+            <a href="materias.php" class="btn btn-info">
+              <i class="fas fa-arrow-right me-1"></i>Ir a Materias
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php elseif (esProfesor()): ?>
+  <div class="container mt-4">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h3 class="mb-4 text-center">Panel del Profesor</h3>
+      </div>
+      <div class="col-md-6 mb-3 mx-auto">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body text-center">
+            <i class="fas fa-clipboard-list fa-3x text-warning mb-3"></i>
+            <h5 class="card-title">Gestión de Notas</h5>
+            <p class="card-text">Administra las calificaciones de tus estudiantes en las materias que impartes.</p>
+            <a href="notas.php" class="btn btn-warning">
+              <i class="fas fa-arrow-right me-1"></i>Gestionar Notas
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php elseif (esAlumno()): ?>
+  <div class="container mt-4">
+    <div class="row mb-4">
+      <div class="col-12">
+        <h3 class="mb-4 text-center">Portal del Estudiante</h3>
+      </div>
+      <div class="col-md-6 mb-3 mx-auto">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body text-center">
+            <i class="fas fa-user-graduate fa-3x text-info mb-3"></i>
+            <h5 class="card-title">Mi Perfil Académico</h5>
+            <p class="card-text">Consulta tu información personal, calificaciones y progreso académico.</p>
+            <a href="perfil_alumno.php" class="btn btn-info">
+              <i class="fas fa-arrow-right me-1"></i>Ver Mi Perfil
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <!-- Sección del Carousel -->
   <div class="container">

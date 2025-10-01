@@ -1,44 +1,52 @@
 <?php
-include 'config.php';
-include 'auth.php';
+include '../config.php';
+include '../auth.php';
 verificarSesion();
+verificarNivel(['admin']); // Solo administradores pueden gestionar materias
 
 if (isset($_GET['eliminar'])) {
     $id_eliminar = (int)($_GET['eliminar']);
     if ($id_eliminar > 0) {
-        $check = $mysqli->query("SELECT id_alumno FROM alumnos WHERE id_alumno=$id_eliminar");
+        $check = $mysqli->query("SELECT id_materia FROM materias WHERE id_materia=$id_eliminar");
         if ($check && $check->num_rows > 0) {
-            $stmt = $mysqli->prepare("DELETE FROM alumnos WHERE id_alumno=?");
+            $stmt = $mysqli->prepare("DELETE FROM materias WHERE id_materia=?");
             $stmt->bind_param('i', $id_eliminar);
             $stmt->execute();
         }
     }
-    header('Location: estudiantes.php');
+    header('Location: materias.php');
     exit;
 }
 
 // Obtener filtros
 $filtro_carrera = isset($_GET['carrera']) ? (int)$_GET['carrera'] : 0;
+$filtro_profesor = isset($_GET['profesor']) ? (int)$_GET['profesor'] : 0;
 
-// Construir consulta base
-$sql = "SELECT a.id_alumno, a.nombre, a.dni, a.Edad, a.fecha_nacimiento, a.id_carrera, c.nombre AS carrera_nombre 
-        FROM alumnos a 
-        LEFT JOIN carreras c ON a.id_carrera = c.id_carrera";
+// Construir consulta base (nueva estructura)
+$sql = "SELECT m.id_materia, m.nombre, m.id_carrera, m.id_profesor,
+        c.nombre AS carrera_nombre, CONCAT(p.nombre, ' ', p.apellido) AS profesor_nombre 
+        FROM materias m 
+        LEFT JOIN carreras c ON m.id_carrera = c.id_carrera
+        LEFT JOIN profesores p ON m.id_profesor = p.id_profesor";
 
 $where_conditions = [];
 if ($filtro_carrera > 0) {
-    $where_conditions[] = "a.id_carrera = $filtro_carrera";
+    $where_conditions[] = "m.id_carrera = $filtro_carrera";
+}
+if ($filtro_profesor > 0) {
+    $where_conditions[] = "m.id_profesor = $filtro_profesor";
 }
 
 if (!empty($where_conditions)) {
     $sql .= " WHERE " . implode(" AND ", $where_conditions);
 }
 
-$sql .= " ORDER BY a.id_alumno";
+$sql .= " ORDER BY m.id_materia";
 $rs = $mysqli->query($sql);
 
-// Obtener carreras para el filtro
+// Obtener carreras y profesores para los filtros
 $carreras_rs = $mysqli->query("SELECT id_carrera, nombre FROM carreras ORDER BY nombre");
+$profesores_rs = $mysqli->query("SELECT id_profesor, nombre FROM profesores ORDER BY nombre");
 ?>
 
 <!DOCTYPE html>
@@ -46,7 +54,7 @@ $carreras_rs = $mysqli->query("SELECT id_carrera, nombre FROM carreras ORDER BY 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Estudiantes</title>
+    <title>Materias</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -83,47 +91,12 @@ $carreras_rs = $mysqli->query("SELECT id_carrera, nombre FROM carreras ORDER BY 
 </head>
 <body>
 
-<div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Sistema Estudiantes</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
-                <li class="nav-item"><a class="nav-link active" href="estudiantes.php">Estudiantes</a></li>
-                <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
-                <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
-                <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
-            </ul>
-            <?php
-            $usuario = obtenerUsuarioActual();
-            if ($usuario['username']) {
-                echo '
-                <div class="navbar-nav ms-auto">
-                    <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdownEstudiantes" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-2"></i>
-                            <span>' . htmlspecialchars($usuario['username']) . '</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="cambiar_password.php"><i class="fas fa-key me-2"></i>Cambiar Contraseña</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</a></li>
-                        </ul>
-                    </div>
-                </div>';
-            }
-            ?>
-        </div>
-    </nav>
-</div>
+<?php include '../include/navbar.php'; ?>
 
 <div class="container py-4">
-    <h2 class="mb-4">Listado de Estudiantes</h2>
+    <h2 class="mb-4">Listado de Materias</h2>
     
-    <a href="alta.php" class="btn btn-primary mb-3">Agregar Alumno</a>
+    <a href="alta_materia.php" class="btn btn-primary mb-3">Agregar Materia</a>
 
     <!-- Filtros -->
     <div class="card filter-card mb-4">
@@ -143,11 +116,22 @@ $carreras_rs = $mysqli->query("SELECT id_carrera, nombre FROM carreras ORDER BY 
                         <?php endwhile; ?>
                     </select>
                 </div>
-                <div class="col-md-8 d-flex align-items-end">
+                <div class="col-md-4">
+                    <label for="profesor" class="form-label"><i class="fas fa-chalkboard-teacher me-1"></i>Profesor</label>
+                    <select class="form-select" id="profesor" name="profesor">
+                        <option value="0">Todos los profesores</option>
+                        <?php while ($profesor = $profesores_rs->fetch_assoc()): ?>
+                            <option value="<?= $profesor['id_profesor'] ?>" <?= ($filtro_profesor == $profesor['id_profesor']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($profesor['nombre']) ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
                     <button type="submit" class="btn btn-filter me-2">
                         <i class="fas fa-search me-1"></i>Filtrar
                     </button>
-                    <a href="estudiantes.php" class="btn btn-outline-secondary">
+                    <a href="materias.php" class="btn btn-outline-secondary">
                         <i class="fas fa-times me-1"></i>Limpiar
                     </a>
                 </div>
@@ -160,25 +144,21 @@ $carreras_rs = $mysqli->query("SELECT id_carrera, nombre FROM carreras ORDER BY 
             <tr>
                 <th>ID</th>
                 <th>Nombre</th>
-                <th>DNI</th>
-                <th>Edad</th>
-                <th>Fecha Nacimiento</th>
                 <th>Carrera</th>
+                <th>Profesor</th>
                 <th>Acciones</th>
             </tr>
         </thead>
-        <tbody id="tablaEstudiantes">
+        <tbody id="tablaMaterias">
             <?php while ($row = $rs->fetch_assoc()) { ?>
-            <tr data-carrera="<?= $row['id_carrera'] ?>">
-                <td><?= $row['id_alumno'] ?></td>
+            <tr>
+                <td><?= $row['id_materia'] ?></td>
                 <td><?= htmlspecialchars($row['nombre']) ?></td>
-                <td><?= htmlspecialchars($row['dni'] ?? 'No registrado') ?></td>
-                <td><?= $row['Edad'] ?></td>
-                <td><?= $row['fecha_nacimiento'] ?></td>
                 <td><?= htmlspecialchars($row['carrera_nombre'] ?? 'Sin carrera') ?></td>
+                <td><?= htmlspecialchars($row['profesor_nombre'] ?? 'Sin profesor') ?></td>
                 <td>
-                    <a href="modificar.php?id=<?= $row['id_alumno'] ?>" class="btn btn-sm btn-outline-secondary">Modificar</a>
-                    <a href="estudiantes.php?eliminar=<?= $row['id_alumno'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que querés eliminar este alumno?')">Eliminar</a>
+                    <a href="modificar_materia.php?id=<?= $row['id_materia'] ?>" class="btn btn-sm btn-outline-secondary">Modificar</a>
+                    <a href="materias.php?eliminar=<?= $row['id_materia'] ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Seguro que querés eliminar esta materia?')">Eliminar</a>
                 </td>
             </tr>
             <?php } ?>
@@ -203,12 +183,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Filtrado en tiempo real adicional
 document.addEventListener('DOMContentLoaded', function() {
-    const tablaBody = document.getElementById('tablaEstudiantes');
+    const tablaBody = document.getElementById('tablaMaterias');
     const filas = tablaBody.querySelectorAll('tr');
     
-    // Contar estudiantes por carrera
-    function contarEstudiantes() {
-        const totalElement = document.querySelector('.total-estudiantes');
+    // Contar materias
+    function contarMaterias() {
+        const totalElement = document.querySelector('.total-materias');
         if (totalElement) {
             const filasVisibles = Array.from(filas).filter(fila => 
                 fila.style.display !== 'none'
@@ -217,12 +197,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Mostrar información de estudiantes
+    // Mostrar información de materias
     const infoDiv = document.createElement('div');
     infoDiv.className = 'alert alert-info mt-3';
     infoDiv.innerHTML = `
         <i class="fas fa-info-circle me-2"></i>
-        Total de estudiantes mostrados: <strong class="total-estudiantes">${filas.length}</strong>
+        Total de materias mostradas: <strong class="total-materias">${filas.length}</strong>
     `;
     document.querySelector('.container').appendChild(infoDiv);
     
@@ -233,13 +213,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Actualizar contador inicial
-    contarEstudiantes();
+    contarMaterias();
 });
 
 // Confirmación mejorada para eliminar
 function confirmarEliminacion(nombre, id) {
-    if (confirm(`¿Está seguro que desea eliminar al estudiante "${nombre}"?\n\nEsta acción no se puede deshacer.`)) {
-        window.location.href = `estudiantes.php?eliminar=${id}`;
+    if (confirm(`¿Está seguro que desea eliminar la materia "${nombre}"?\n\nEsta acción no se puede deshacer.`)) {
+        window.location.href = `materias.php?eliminar=${id}`;
     }
 }
 </script>
@@ -285,3 +265,4 @@ code {
 </body>
 <?php require 'include/footer.php'; ?>
 </html>
+

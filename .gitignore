@@ -1,9 +1,29 @@
-config.php
-*.db
-*.sqlite
-/xampp/
-/xampp/mysql/data/
-/mysql/data/
-/.vscode/
-.DS_Store
+# Archivos de debug y prueba temporales
+debug_*.php
+test_*.php
+fix_*.php
+crear_usuarios_prueba.php
+
+# Archivos de configuración local
+config_local.php
+
+# Logs de Apache/PHP
+*.log
+
+# Archivos temporales del sistema
 Thumbs.db
+.DS_Store
+
+# Archivos de backup
+*.bak
+*.backup
+
+# Archivos de IDE
+.vscode/
+.idea/
+
+# Node modules si se usan
+node_modules/
+
+# Vendor de Composer si se usa
+vendor/

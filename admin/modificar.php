@@ -1,7 +1,7 @@
 <?php
-include 'include/header.php';
-include 'config.php';
-include 'auth.php';
+include '../include/header.php';
+include '../config.php';
+include '../auth.php';
 verificarSesion();
 $id=(int)($_GET['id']??0);
 $est=$mysqli->query("SELECT id_alumno,nombre,Edad,fecha_nacimiento,id_carrera FROM alumnos WHERE id_alumno=$id")->fetch_assoc();
@@ -56,3 +56,4 @@ $carreras=$mysqli->query('SELECT id_carrera, nombre, duracion_anios FROM carrera
   </form>
 </div>
 <?php include 'include/footer.php'; ?>
+

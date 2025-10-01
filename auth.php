@@ -7,18 +7,28 @@ function iniciarSesion() {
     }
 }
 
+function obtenerRutaLogin() {
+    $current_dir = str_replace('\\', '/', dirname($_SERVER['PHP_SELF']));
+    if (strpos($current_dir, '/profesor') !== false || strpos($current_dir, '/admin') !== false || 
+        strpos($current_dir, '/alumno') !== false || strpos($current_dir, '/auth') !== false) {
+        return '../auth/login.php';
+    } else {
+        return 'auth/login.php';
+    }
+}
+
 function verificarSesion() {
     iniciarSesion();
     
     if (!isset($_SESSION['usuario_id']) || !isset($_SESSION['username'])) {
-        header('Location: login.php');
+        header('Location: ' . obtenerRutaLogin());
         exit;
     }
     
     // Verificar tiempo de inactividad (30 minutos)
     if (isset($_SESSION['tiempo_login']) && (time() - $_SESSION['tiempo_login']) > 1800) {
         cerrarSesion();
-        header('Location: login.php?error=sesion_expirada');
+        header('Location: ' . obtenerRutaLogin() . '?error=sesion_expirada');
         exit;
     }
     
@@ -37,6 +47,7 @@ function obtenerUsuarioActual() {
     return [
         'id' => $_SESSION['usuario_id'] ?? null,
         'username' => $_SESSION['username'] ?? null,
+        'nivel' => $_SESSION['nivel'] ?? null,
         'tiempo_login' => $_SESSION['tiempo_login'] ?? null
     ];
 }
@@ -73,11 +84,13 @@ function validarPasswordSegura($password) {
 }
 
 function hashPassword($password) {
-    return password_hash($password, PASSWORD_DEFAULT);
+    // Cambiado: ahora retorna la contraseña sin hashear
+    return $password;
 }
 
 function verificarPassword($password, $hash) {
-    return password_verify($password, $hash);
+    // Cambiado: ahora compara directamente las contraseñas
+    return $password === $hash;
 }
 
 function generarTokenCSRF() {
@@ -91,6 +104,88 @@ function generarTokenCSRF() {
 function verificarTokenCSRF($token) {
     iniciarSesion();
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+}
+
+function verificarNivel($nivelesPermitidos) {
+    iniciarSesion();
+    $usuario = obtenerUsuarioActual();
+    
+    if (!$usuario['nivel']) {
+        header('Location: ' . obtenerRutaLogin());
+        exit;
+    }
+    
+    if (!in_array($usuario['nivel'], $nivelesPermitidos)) {
+        header('Location: acceso_denegado.php');
+        exit;
+    }
+}
+
+function esAdmin() {
+    $usuario = obtenerUsuarioActual();
+    return $usuario['nivel'] === 'admin';
+}
+
+function esProfesor() {
+    $usuario = obtenerUsuarioActual();
+    return $usuario['nivel'] === 'profesor';
+}
+
+function esAlumno() {
+    $usuario = obtenerUsuarioActual();
+    return $usuario['nivel'] === 'alumno';
+}
+
+function obtenerIdProfesor() {
+    global $mysqli;
+    $usuario = obtenerUsuarioActual();
+    
+    if ($usuario['nivel'] !== 'profesor') {
+        return null;
+    }
+    
+    // Verificar si la tabla profesores tiene columna id_usuario
+    $check_column = $mysqli->query("SHOW COLUMNS FROM profesores LIKE 'id_usuario'");
+    if ($check_column && $check_column->num_rows > 0) {
+        $stmt = $mysqli->prepare("SELECT id_profesor FROM profesores WHERE id_usuario = ?");
+        $stmt->bind_param('i', $usuario['id']);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        return $result['id_profesor'] ?? null;
+    } else {
+        // Si no existe la columna id_usuario, buscar por nombre de usuario o email
+        $stmt = $mysqli->prepare("SELECT id_profesor FROM profesores WHERE email = ? OR CONCAT(nombre, ' ', apellido) = ?");
+        $stmt->bind_param('ss', $usuario['username'], $usuario['username']);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        return $result['id_profesor'] ?? null;
+    }
+}
+
+function obtenerIdAlumno() {
+    global $mysqli;
+    $usuario = obtenerUsuarioActual();
+    
+    if ($usuario['nivel'] !== 'alumno') {
+        return null;
+    }
+    
+    // Verificar si la tabla alumnos tiene columna id_usuario
+    $check_column = $mysqli->query("SHOW COLUMNS FROM alumnos LIKE 'id_usuario'");
+    if ($check_column && $check_column->num_rows > 0) {
+        $stmt = $mysqli->prepare("SELECT id_alumno FROM alumnos WHERE id_usuario = ?");
+        $stmt->bind_param('i', $usuario['id']);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        return $result['id_alumno'] ?? null;
+    } else {
+        // Si no existe la columna id_usuario, buscar por nombre de usuario
+        $stmt = $mysqli->prepare("SELECT id_alumno FROM alumnos WHERE nombre = ?");
+        $stmt->bind_param('s', $usuario['username']);
+        $stmt->execute();
+        $result = $stmt->get_result()->fetch_assoc();
+        return $result['id_alumno'] ?? null;
+    }
 }
 
 function obtenerNavbarUsuario() {

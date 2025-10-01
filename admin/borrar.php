@@ -1,5 +1,5 @@
 <?php
-include 'config.php';
+include '../config.php';
 
 $id=(int)($_GET['id']??0);
 
@@ -21,3 +21,4 @@ if($id>0){
 
 header('Location: estudiantes.php');
 exit;
+

@@ -1,6 +1,6 @@
 <?php
-include 'config.php';
-include 'auth.php';
+include '../config.php';
+include '../auth.php';
 verificarSesion();
 
 $usuario = obtenerUsuarioActual();
@@ -21,13 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $datosUsuario = $result->fetch_assoc();
         
         if ($datosUsuario) {
-            // Verificar contraseña actual
-            $passwordCorrecta = false;
-            if (password_verify($passwordActual, $datosUsuario['password'])) {
-                $passwordCorrecta = true;
-            } elseif ($datosUsuario['password'] === $passwordActual) {
-                $passwordCorrecta = true;
-            }
+            // Verificar contraseña actual (cambiado: solo comparación directa)
+            $passwordCorrecta = ($datosUsuario['password'] === $passwordActual);
             
             if (!$passwordCorrecta) {
                 $error = 'La contraseña actual es incorrecta.';
@@ -39,10 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (!empty($erroresPassword)) {
                     $error = 'La nueva contraseña no cumple los requisitos:<br>• ' . implode('<br>• ', $erroresPassword);
                 } else {
-                    // Actualizar contraseña
-                    $hashedPassword = hashPassword($passwordNueva);
+                    // Actualizar contraseña (cambiado: sin hashear)
                     $updateStmt = $mysqli->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
-                    $updateStmt->bind_param('si', $hashedPassword, $usuario['id']);
+                    $updateStmt->bind_param('si', $passwordNueva, $usuario['id']);
                     
                     if ($updateStmt->execute()) {
                         $success = 'Contraseña actualizada exitosamente.';
@@ -132,26 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 
-<div class="container-fluid">
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Sistema Estudiantes</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link" href="index.php">Inicio</a></li>
-                <li class="nav-item"><a class="nav-link" href="estudiantes.php">Estudiantes</a></li>
-                <li class="nav-item"><a class="nav-link" href="notas.php">Notas</a></li>
-                <li class="nav-item"><a class="nav-link" href="reportes.php">Reportes</a></li>
-                <li class="nav-item"><a class="nav-link" href="perfil.php">Ver Perfil</a></li>
-            </ul>
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-1"></i>Cerrar Sesión</a></li>
-            </ul>
-        </div>
-    </nav>
-</div>
+<?php include '../include/navbar.php'; ?>
 
 <div class="container py-4">
     <h2 class="mb-4">Cambiar Contraseña</h2>

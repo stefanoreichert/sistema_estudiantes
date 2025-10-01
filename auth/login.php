@@ -1,7 +1,8 @@
 <?php
 session_start();
-include 'config.php';
-include 'auth.php';
+include '../config.php';
+include '../auth.php';
+
 
 $error = '';
 $success = '';
@@ -31,7 +32,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
         $password = trim($_POST['password'] ?? '');
         
         if ($username && $password) {
-            $stmt = $mysqli->prepare("SELECT id, username, password FROM usuarios WHERE username = ?");
+            // Verificar si la columna 'nivel' existe
+            $columnas = $mysqli->query("SHOW COLUMNS FROM usuarios LIKE 'nivel'");
+            $tieneNivel = $columnas->num_rows > 0;
+            
+            if ($tieneNivel) {
+                $stmt = $mysqli->prepare("SELECT id, username, password, nivel FROM usuarios WHERE username = ?");
+            } else {
+                $stmt = $mysqli->prepare("SELECT id, username, password FROM usuarios WHERE username = ?");
+            }
             $stmt->bind_param('s', $username);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -40,27 +49,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                 // Verificar contraseña (si está hasheada o en texto plano)
                 $passwordValida = false;
                 
-                if (password_verify($password, $user['password'])) {
-                    // Password hasheada
+                // Cambiado: ahora solo verifica directamente sin hashear
+                if ($user['password'] === $password) {
                     $passwordValida = true;
-                } elseif ($user['password'] === $password) {
-                    // Password en texto plano (para compatibilidad)
-                    $passwordValida = true;
-                    
-                    // Actualizar a password hasheada
-                    $newHash = hashPassword($password);
-                    $updateStmt = $mysqli->prepare("UPDATE usuarios SET password = ? WHERE id = ?");
-                    $updateStmt->bind_param('si', $newHash, $user['id']);
-                    $updateStmt->execute();
                 }
                 
                 if ($passwordValida) {
                     // Login exitoso - crear sesión
                     $_SESSION['usuario_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];
+                    $_SESSION['nivel'] = $user['nivel'] ?? 'admin'; // Por defecto admin si no tiene nivel
                     $_SESSION['tiempo_login'] = time();
                     
-                    header('Location: index.php');
+                    // Manejar "Recordar usuario"
+                    if (isset($_POST['recordar_usuario']) && $_POST['recordar_usuario'] == '1') {
+                        // Crear cookie que dure 30 días
+                        setcookie('recordar_usuario', $username, time() + (30 * 24 * 60 * 60), '/');
+                    } else {
+                        // Eliminar cookie si no se seleccionó recordar
+                        if (isset($_COOKIE['recordar_usuario'])) {
+                            setcookie('recordar_usuario', '', time() - 3600, '/');
+                        }
+                    }
+                    
+                    // Redirigir según el nivel
+                    switch ($_SESSION['nivel']) {
+                        case 'admin':
+                            header('Location: ../index.php');
+                            break;
+                        case 'profesor':
+                            header('Location: ../profesor/perfil_profesor.php');
+                            break;
+                        case 'alumno':
+                            header('Location: ../alumno/perfil_alumno.php');
+                            break;
+                        default:
+                            header('Location: ../index.php');
+                    }
                     exit;
                 } else {
                     $error = 'Contraseña incorrecta.';
@@ -266,6 +291,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                 padding: 1.5rem;
             }
         }
+        
+        /* Estilos para el botón de mostrar/ocultar contraseña */
+        #togglePassword {
+            color: #6c757d;
+            transition: color 0.3s ease;
+            cursor: pointer;
+        }
+        
+        #togglePassword:hover {
+            color: #495057;
+            background: none !important;
+        }
+        
+        #togglePassword:focus {
+            box-shadow: none;
+            outline: none;
+        }
+        
+        .form-floating .position-absolute {
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -321,9 +367,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                                         <label for="username"><i class="fas fa-user me-2"></i>Nombre de Usuario</label>
                                     </div>
                                     
-                                    <div class="form-floating">
-                                        <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required>
+                                    <div class="form-floating position-relative">
+                                        <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required style="padding-right: 3rem;">
                                         <label for="password"><i class="fas fa-lock me-2"></i>Contraseña</label>
+                                        <button type="button" class="btn btn-outline-secondary position-absolute" id="togglePassword" style="top: 50%; right: 10px; transform: translateY(-50%); z-index: 10; border: none; background: none; padding: 0.25rem 0.5rem;">
+                                            <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" class="form-check-input" id="recordar_usuario" name="recordar_usuario" value="1">
+                                        <label class="form-check-label" for="recordar_usuario">
+                                            <i class="fas fa-user-check me-2"></i>Recordar usuario
+                                        </label>
                                     </div>
                                     
                                     <div class="d-grid">
@@ -433,6 +489,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Funcionalidad para mostrar/ocultar contraseña
+        document.addEventListener('DOMContentLoaded', function() {
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+            
+            if (togglePassword && passwordInput && toggleIcon) {
+                togglePassword.addEventListener('click', function() {
+                    // Cambiar el tipo de input
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    
+                    // Cambiar el icono
+                    if (type === 'text') {
+                        toggleIcon.classList.remove('fa-eye');
+                        toggleIcon.classList.add('fa-eye-slash');
+                        togglePassword.setAttribute('title', 'Ocultar contraseña');
+                    } else {
+                        toggleIcon.classList.remove('fa-eye-slash');
+                        toggleIcon.classList.add('fa-eye');
+                        togglePassword.setAttribute('title', 'Mostrar contraseña');
+                    }
+                });
+                
+                // Establecer título inicial
+                togglePassword.setAttribute('title', 'Mostrar contraseña');
+            }
+        });
+
         // Auto-limpiar mensajes después de 5 segundos
         setTimeout(function() {
             const alerts = document.querySelectorAll('.alert');
@@ -520,6 +605,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion'])) {
                 
                 registerBtn.disabled = !isFormValid;
             }
+            
+            // Autocompletar usuario recordado
+            <?php if (isset($_COOKIE['recordar_usuario'])): ?>
+            document.getElementById('username').value = '<?= htmlspecialchars($_COOKIE['recordar_usuario']) ?>';
+            document.getElementById('recordar_usuario').checked = true;
+            <?php endif; ?>
         });
     </script>
 </body>
